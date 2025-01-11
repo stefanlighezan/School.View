@@ -1,79 +1,45 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
-import {
-  getFirestore,
-  doc,
-  setDoc,
-} from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
-import { expfirebaseConfig } from "./config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+import { getFirestore, collection, addDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
-const firebaseConfig = expfirebaseConfig;
-
+const firebaseConfig = {
+    apiKey: config.apiKey,
+    authDomain: config.authDomain,
+    projectId: config.projectId,
+    storageBucket: config.storageBucket,
+    messagingSenderId: config.messagingSenderId,
+    appId: config.appId,
+    measurementId: config.measurementId
+};
 const app = initializeApp(firebaseConfig);
-const auth = getAuth();
+const auth = getAuth(app);
 const db = getFirestore(app);
+let user = null
 
-const emailInput = document.getElementById("email");
-const passwordInput = document.getElementById("password");
-const loginBtn = document.getElementById("loginBtn");
-const signupBtn = document.getElementById("signupBtn");
+// Handle form submission
+const authForm = document.getElementById('authForm');
 
-const signUp = async () => {
-  const email = emailInput.value;
-  const password = passwordInput.value;
+authForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-  try {
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    const user = userCredential.user;
-    const userName = prompt("Enter your name:");
-    const userDob = prompt("Enter your date of birth:");
+    const email = authForm.email.value;
+    const password = authForm.password.value;
 
-    await setDoc(doc(db, "users", user.uid), {
-      name: userName,
-      dob: userDob,
-      email: email,
-      decks: [],
-    });
+    try{
 
-    alert("User created successfully");
-  } catch (error) {
-    console.error("Error signing up:", error.message);
-    alert(error.message);
-  }
-};
+    await signInWithEmailAndPassword(auth, email, password);
+            alert('Logged in successfully!');
 
-const login = async () => {
-  const email = emailInput.value;
-  const password = passwordInput.value;
+            user = auth.currentUser
 
-  try {
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    const user = userCredential.user;
+            sessionStorage.setItem('currentUser', JSON.stringify(user));
 
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    if (!userDoc.exists()) {
-      console.error("No such user in Firestore!");
-    } else {
-      console.log("User logged in:", userDoc.data());
-      alert("Login successful");
-    }
-  } catch (error) {
-    console.error("Error logging in:", error.message);
-    alert(error.message);
-  }
-};
+            // Redirect to App.html
+            window.location.href = 'App.html';
+        } catch (signInError) {
+            alert(`Error signing in: ${signInError.message}`);
+            console.log(signInError)
+        }
+});
 
-signupBtn.addEventListener("click", signUp);
-loginBtn.addEventListener("click", login);
